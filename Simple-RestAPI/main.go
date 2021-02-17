@@ -10,6 +10,7 @@ import (
 
 	"product-api/handlers"
 
+	"github.com/gorilla/mux"
 	"github.com/nicholasjackson/env"
 )
 
@@ -25,8 +26,19 @@ func main() {
 	ph := handlers.NewProducts(l)
 
 	// create a new serve mux and register the handlers
-	sm := http.NewServeMux()
-	sm.Handle("/", ph)
+	sm := mux.NewRouter()
+
+	getRouter := sm.Methods(http.MethodGet).Subrouter()
+	postRouter := sm.Methods(http.MethodPost).Subrouter()
+	putRouter := sm.Methods(http.MethodPut).Subrouter()
+	deleteRouter := sm.Methods(http.MethodDelete).Subrouter()
+
+	getRouter.HandleFunc("/", ph.GetProducts)
+	postRouter.Use(ph.MiddlewareValidateProduct)
+	postRouter.HandleFunc("/", ph.AddProduct)
+	putRouter.Use(ph.MiddlewareValidateProduct)
+	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProduct)
+	deleteRouter.HandleFunc("/{id:[0-9]+}", ph.RemoveProduct)
 
 	// create a new server
 	s := http.Server{
